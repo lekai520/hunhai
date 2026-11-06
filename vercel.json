@@ -2,8 +2,7 @@
   "rewrites": [
     {
       "source": "/api/data",
-      "destination": "https://www.kdocs.cn/api/v3/ide/file/cuKC209JI9WS/script/V2-6VuEDSYiDMewZp4dE6buj9/sync_task",
-      "methods": ["POST"]
+      "destination": "https://www.kdocs.cn/api/v3/ide/file/cuKC209JI9WS/script/V2-6VuEDSYiDMewZp4dE6buj9/sync_task"
     }
   ]
 }
