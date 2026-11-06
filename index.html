@@ -20,9 +20,9 @@ body{padding:16px;max-width:1200px;margin:0 auto;background:#f6f7f9;}
 <body>
 <div class="top-bar">
   <input id="searchInput" placeholder="搜索式神/御魂/阵容..." oninput="filterTable()">
-  <button class="tab-btn active" data-tab="shi" onclick="switchTab('shi')">式神</button>
-  <button class="tab-btn" data-tab="zhen" onclick="switchTab('zhen')">阵容</button>
-  <button class="tab-btn" data-tab="car" onclick="switchTab('car')">发车</button>
+  <button class="tab-btn active" data-tab="shi" onclick="switchTab('shi')">式神仓库</button>
+  <button class="tab-btn" data-tab="zhen" onclick="switchTab('zhen')">阵容库</button>
+  <button class="tab-btn" data-tab="car" onclick="switchTab('car')">发车匹配</button>
 </div>
 
 <div id="tab-shi" class="tab-wrap show">
@@ -55,7 +55,6 @@ let rawShi = [], rawZhen = [], rawCar = [];
 
 function switchTab(tab) {
   currentTab = tab;
-  // 隐藏全部
   document.querySelectorAll('.tab-wrap').forEach(el=>el.classList.remove('show'));
   document.getElementById('tab-'+tab).classList.add('show');
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
@@ -85,10 +84,9 @@ function filterTable() {
   else if (currentTab === "car") renderCar(rawCar, kw);
 }
 
-// 式神渲染
+// 式神仓库
 function renderShi(list, keyword) {
   const wrap = document.getElementById("tab-shi");
-  // 保留表头，清空数据行
   const header = wrap.querySelector(".header-row");
   wrap.innerHTML = "";
   wrap.appendChild(header);
@@ -110,7 +108,7 @@ function renderShi(list, keyword) {
   })
 }
 
-// 阵容渲染
+// 阵容库
 function renderZhen(list, keyword) {
   const wrap = document.getElementById("tab-zhen");
   const header = wrap.querySelector(".header-row");
@@ -133,7 +131,7 @@ function renderZhen(list, keyword) {
   })
 }
 
-// 发车渲染
+// 发车匹配
 function renderCar(list, keyword) {
   const wrap = document.getElementById("tab-car");
   const header = wrap.querySelector(".header-row");
@@ -156,9 +154,7 @@ function renderCar(list, keyword) {
   })
 }
 
-// 页面加载自动拉取
 window.onload = loadAllData;
 </script>
 </body>
 </html>
-
