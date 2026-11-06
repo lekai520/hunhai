@@ -3,144 +3,161 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>魂海组队查询面板（金山文档AirScript）</title>
+<title>勋海斗技数据表</title>
 <style>
-*{box-sizing:border-box;font-family:system-ui,sans-serif;}
-body{padding:12px;background:#f5f7fa;margin:0;}
-.box{background:#fff;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px #00000018;}
-h3{margin-top:0;color:#224;}
-input{width:100%;padding:9px;margin:4px 0;border:1px solid #ccc;border-radius:6px;}
-button{padding:8px 12px;margin:4px;border:none;border-radius:6px;background:#4477dd;color:#fff;cursor:pointer;}
-table{width:100%;border-collapse:collapse;margin-top:8px;}
-th,td{border:1px solid #ddd;padding:6px;font-size:13px;}
-th{background:#eef4ff;}
-.tab-btn{margin-right:4px;background:#88a8ee;}
-.tab-btn.active{background:#4477dd;}
-.hide{display:none;}
-.tip{color:#666;font-size:12px;}
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,sans-serif;}
+body{padding:16px;max-width:1200px;margin:0 auto;background:#f6f7f9;}
+.top-bar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+#searchInput{flex:1;min-width:220px;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:14px;}
+.tab-btn{padding:10px 16px;border:none;border-radius:8px;background:#e8edf6;color:#222;cursor:pointer;font-size:14px;}
+.tab-btn.active{background:#2563eb;color:#fff;}
+.tab-wrap{display:none;}
+.tab-wrap.show{display:block;}
+.row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:10px 12px;border-bottom:1px solid #eee;background:#fff;}
+.header-row{background:#dbeafe;font-weight:bold;}
 </style>
 </head>
 <body>
-<div class="box">
-  <h3>魂海组队查询面板（金山文档AirScript）</h3>
-  <div>
-    <button class="tab-btn active" onclick="switchTab('shi')">式神仓库</button>
-    <button class="tab-btn" onclick="switchTab('zhen')">阵容库</button>
-    <button class="tab-btn" onclick="switchTab('car')">发车匹配</button>
-    <button onclick="loadAllData()">🔄 手动刷新</button>
-  </div>
-  <div class="tip">每5秒自动同步金山文档数据</div>
-  <input id="searchInput" placeholder="搜索：式神/昵称/编号" oninput="filterTable()">
+<div class="top-bar">
+  <input id="searchInput" placeholder="搜索式神/御魂/阵容..." oninput="filterTable()">
+  <button class="tab-btn active" data-tab="shi" onclick="switchTab('shi')">式神</button>
+  <button class="tab-btn" data-tab="zhen" onclick="switchTab('zhen')">阵容</button>
+  <button class="tab-btn" data-tab="car" onclick="switchTab('car')">发车</button>
 </div>
 
-<div id="tab-shi" class="box">
-  <h3>式神仓库</h3>
-  <table id="shi-table"></table>
+<div id="tab-shi" class="tab-wrap show">
+  <div class="row header-row">
+    <div>式神名称</div>
+    <div>面板指标</div>
+    <div>御魂</div>
+  </div>
 </div>
-<div id="tab-zhen" class="box hide">
-  <h3>阵容库</h3>
-  <table id="zhen-table"></table>
+<div id="tab-zhen" class="tab-wrap">
+  <div class="row header-row">
+    <div>名称</div>
+    <div>效果</div>
+    <div></div>
+  </div>
 </div>
-<div id="tab-car" class="box hide">
-  <h3>发车匹配</h3>
-  <table id="car-table"></table>
+<div id="tab-car" class="tab-wrap">
+  <div class="row header-row">
+    <div>名称</div>
+    <div>备注</div>
+    <div></div>
+  </div>
 </div>
 
 <script>
-// 固定写死，不用改这里！金山链接填在 vercel.json
 const AIRSCRIPT_URL = "/api";
-
 
 let currentTab = "shi";
 let rawShi = [], rawZhen = [], rawCar = [];
 
-function switchTab(tab){
+function switchTab(tab) {
   currentTab = tab;
-  document.querySelectorAll('[id^="tab-"]').forEach(el=>el.classList.add('hide'))
-  document.getElementById('tab-'+tab).classList.remove('hide')
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'))
-  event.target.classList.add('active')
+  // 隐藏全部
+  document.querySelectorAll('.tab-wrap').forEach(el=>el.classList.remove('show'));
+  document.getElementById('tab-'+tab).classList.add('show');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
   filterTable();
 }
 
-async function loadAllData(){
-  try{
-    // ✅ POST 请求，适配金山AirScript Webhook
-    const res = await fetch(AIRSCRIPT_URL, {method:"POST"});
+async function loadAllData() {
+  try {
+    const res = await fetch(AIRSCRIPT_URL, { method: "POST" });
     const json = await res.json();
+    if (json.error) throw new Error(json.error);
     rawShi = json.shi || [];
     rawZhen = json.zhen || [];
     rawCar = json.car || [];
     filterTable();
-  }catch(e){
-    alert("拉取数据失败！检查链接是否正确、脚本是否正常运行");
+  } catch (e) {
+    alert("拉取数据失败：" + e.message);
     console.error(e);
   }
 }
 
-function filterTable(){
+function filterTable() {
   const kw = document.getElementById("searchInput").value.toLowerCase().trim();
-  if(currentTab==="shi") renderShi(rawShi.filter(r=>match(r,kw)));
-  if(currentTab==="zhen") renderZhen(rawZhen.filter(r=>match(r,kw)));
-  if(currentTab==="car") renderCar(rawCar.filter(r=>match(r,kw)));
-}
-function match(fields,kw){
-  if(!kw) return true;
-  return Object.values(fields).some(v=>String(v).toLowerCase().includes(kw))
+  if (currentTab === "shi") renderShi(rawShi, kw);
+  else if (currentTab === "zhen") renderZhen(rawZhen, kw);
+  else if (currentTab === "car") renderCar(rawCar, kw);
 }
 
-function renderShi(list){
-  const tb = document.getElementById('shi-table')
-  tb.innerHTML = `<tr><th>昵称</th><th>式神</th><th>御魂</th><th>主属性</th><th>面板速度</th><th>技能</th><th>二号机</th><th>备注</th></tr>`
-  list.forEach(f=>{
-    tb.innerHTML += `<tr>
-      <td>${f.昵称||""}</td>
-      <td>${f.式神名字||""}</td>
-      <td>${f.御魂套装||""}</td>
-      <td>${f.主属性||""}</td>
-      <td>${f.速度/面板指标||""}</td>
-      <td>${f.是否满技能||""}</td>
-      <td>${f.有没有二号机||""}</td>
-      <td>${f.备注||""}</td>
-    </tr>`
-  })
-}
-function renderZhen(list){
-  const tb = document.getElementById('zhen-table')
-  tb.innerHTML = `<tr><th>编号</th><th>阶段</th><th>阵容名</th><th>式神列表</th><th>配速</th><th>时长</th><th>阵容码</th><th>刚需</th></tr>`
-  list.forEach(f=>{
-    tb.innerHTML += `<tr>
-      <td>${f.阵容编号||""}</td>
-      <td>${f.阶段||""}</td>
-      <td>${f.阵容名称||""}</td>
-      <td>${f.式神列表||""}</td>
-      <td>${f.御魂配速说明||""}</td>
-      <td>${f.通关时长||""}</td>
-      <td>${f.阵容码||""}</td>
-      <td>${f.刚需备注||""}</td>
-    </tr>`
-  })
-}
-function renderCar(list){
-  const tb = document.getElementById('car-table')
-  tb.innerHTML = `<tr><th>发车号</th><th>阵容编号</th><th>阶段</th><th>缺式神</th><th>已有</th><th>待补位</th><th>状态</th><th>发车时间</th></tr>`
-  list.forEach(f=>{
-    tb.innerHTML += `<tr>
-      <td>${f.发车编号||""}</td>
-      <td>${f.对应阵容编号||""}</td>
-      <td>${f.阶段||""}</td>
-      <td>${f.缺少式神||""}</td>
-      <td>${f.已提供式神||""}</td>
-      <td>${f.待补位人员||""}</td>
-      <td>${f.状态||""}</td>
-      <td>${f.发车时间||""}</td>
-    </tr>`
+// 式神渲染
+function renderShi(list, keyword) {
+  const wrap = document.getElementById("tab-shi");
+  // 保留表头，清空数据行
+  const header = wrap.querySelector(".header-row");
+  wrap.innerHTML = "";
+  wrap.appendChild(header);
+
+  list.forEach(item => {
+    const name = (item["式神名称"] || "").toLowerCase();
+    const panel = item["面板指标"] || "";
+    const yuhun = item["御魂"] || "";
+    if(keyword && !name.includes(keyword) && !panel.toLowerCase().includes(keyword) && !yuhun.toLowerCase().includes(keyword)) return;
+
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div>${item["式神名称"] || ""}</div>
+      <div>${item["面板指标"] || ""}</div>
+      <div>${item["御魂"] || ""}</div>
+    `;
+    wrap.appendChild(row);
   })
 }
 
-// 初始化
-loadAllData();
-setInterval(loadAllData,5000); // 5秒自动刷新
+// 阵容渲染
+function renderZhen(list, keyword) {
+  const wrap = document.getElementById("tab-zhen");
+  const header = wrap.querySelector(".header-row");
+  wrap.innerHTML = "";
+  wrap.appendChild(header);
+
+  list.forEach(item => {
+    const name = (item["名称"] || "").toLowerCase();
+    const effect = (item["效果"] || "").toLowerCase();
+    if(keyword && !name.includes(keyword) && !effect.includes(keyword)) return;
+
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div>${item["名称"] || ""}</div>
+      <div>${item["效果"] || ""}</div>
+      <div></div>
+    `;
+    wrap.appendChild(row);
+  })
+}
+
+// 发车渲染
+function renderCar(list, keyword) {
+  const wrap = document.getElementById("tab-car");
+  const header = wrap.querySelector(".header-row");
+  wrap.innerHTML = "";
+  wrap.appendChild(header);
+
+  list.forEach(item => {
+    const name = (item["名称"] || "").toLowerCase();
+    const note = (item["备注"] || "").toLowerCase();
+    if(keyword && !name.includes(keyword) && !note.includes(keyword)) return;
+
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <div>${item["名称"] || ""}</div>
+      <div>${item["备注"] || ""}</div>
+      <div></div>
+    `;
+    wrap.appendChild(row);
+  })
+}
+
+// 页面加载自动拉取
+window.onload = loadAllData;
 </script>
 </body>
 </html>
